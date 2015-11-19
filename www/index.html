@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+    <meta charset="utf-8">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport" content="initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0, height=device-height, width=device-width">
+    <!-- stylesheets -->
+    <link rel="stylesheet" href="./lib/angular/angular-material.min.css" />
+    <link rel="stylesheet" href="./assets/css/main.css" />
+</head>
+<body class="mainview" layout="column" ng-controller="MainViewController">
+    <!-- toolbar -->
+    <md-toolbar>
+        <div class="md-toolbar-tools">
+            <md-button ng-click="toggleLeftMenu()"><md-icon>menu</md-icon></md-button>
+            <span>Xhira</span>
+        </div>
+    </md-toolbar>
+    <!-- side navigation -->
+    <md-sidenav md-component-id="left" class="md-sidenav-left">
+        <md-list>
+            <md-list-item role="listitem" class="md-clickable">
+                <md-button ui-sref="home" ng-click="closeLeftMenu()">
+                    <md-icon>home</md-icon>
+                    <span>Home</span>
+                </md-button>
+            </md-list-item>
+            <md-list-item role="listitem" class="md-clickable">
+                <md-button ui-sref="logout" ng-click="closeLeftMenu()">
+                    <md-icon>eject</md-icon>
+                    <span>Logout</span>
+                </md-button>
+            </md-list-item>
+
+        </md-list>
+    </md-sidenav>
+    <!-- main view -->
+    <md-content ui-view layout="column" flex></md-content>
+    <!-- libraries -->
+    <script src="./lib/angular/angular.min.js"></script>
+    <script src="./lib/angular/angular-ui-router.min.js"></script>
+    <script src="./lib/angular/angular-animate.min.js"></script>
+    <script src="./lib/angular/angular-aria.min.js"></script>
+    <script src="./lib/angular/angular-material.min.js"></script>
+    <script src="./lib/angular/ng-lodash.min.js"></script>
+    <!-- helpers -->
+    <script src=" ./src/helpers.js"></script>
+    <!-- services -->
+    <script src="./src/services.js"></script>
+    <!-- controllers -->
+    <script src="./src/controllers.js"></script>
+    <!-- application -->
+    <script src="./src/app.js"></script>
+</body>
+</html>

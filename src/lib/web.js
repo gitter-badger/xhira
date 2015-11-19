@@ -2,48 +2,107 @@
 var util = require('util');
 
 var bodyParser = require('body-parser');
-var express = require('express')();
+var Express = require('express');
 var http = require('http');
 var passport = require('passport');
 var passportLocal = require('passport-local');
+var passportLocalApiKey = require('passport-localapikey');
 var session = require('express-session');
 
 var helpers = require('./helpers.js');
+var _ = helpers._;
+
+var express = Express();
 
 // Routes
 var Routes = function () {
     var self = this;
 
-    function isAuthenticated(req, res, next) {
-        if (req.user) {
+    function checkAuthentication(req, res, next) {
+        if (req.isAuthenticated()) {
             return next();
         } else {
-            res.status(401).end();
+            sendResponse(res, { status: 401 });
         }
     }
+
+    function sendResponse(res, opt) {
+        var options = _.defaults(opt || {}, { status: 200, end: true });
+        
+        var payload = { status: {} };
+        var statusType = 'success', statusMessage = 'Ok';
+        if (options.status >= 400) {
+            statusType = 'error';
+            statusMessage = 'Error';
+        }
+        payload.status[statusType] = { message: options.message || statusMessage };
+        if (options.data) { payload.data = options.data };        
+
+        res.status(options.status);
+        res.send(payload);
+        if (options.end) { res.end(); }        
+    }
+
+    function routerAPI() {
+        var router = Express.Router();
+
+        //router.all('/test', checkAuthentication);
+        //router.get('/test', function (req, res) {
+        //    sendResponse(res, { message: 'SECURE Message' });
+        //});
+        router.get('/', function (req, res) {
+            var data = {
+                version: '1.0.0',
+                name: 'Xhira'
+            };
+            sendResponse(res, { data: data });
+        });
+        router.get('/location.json', function (req, res) {
+            var data = {
+                local: false
+            };
+            sendResponse(res, { data: data });
+        });
+        router.get('/auth', function (req, res) {
+            sendResponse(res, { data: { authenticated: req.isAuthenticated() } });
+        });        
+        router.post('/auth/login', function (req, res) {
+            var authType = 'local';            
+            if (req.body.apikey) { authType = 'localapikey'; }
+            passport.authenticate(authType, function (err, user, info) {
+                if (user) {
+                    req.logIn(user, function (err) {
+                        if (!err) {
+                            sendResponse(res);
+                        } else {
+                            sendResponse(res, { status: 401 });
+                        }
+                    });
+                } else {
+                    sendResponse(res, { status: 401 });
+                }
+            })(req,res);
+        });
+        router.get('/auth/logout', function (req, res) {
+            req.logOut();
+            sendResponse(res);
+        });
+        return router;
+    }    
 
     self.init = function () { 
     
         var myLogger = function (req, res, next) {
-            console.log('LOGGED');
+            console.log('USER: ' + JSON.stringify(req.user) + ' (' + Date.now() + ')');
             next();
         };
-        
         express.use(myLogger);
         
-        var requestTime = function (req, res, next) {
-            req.requestTime = Date.now();
-            next();
-        };
+        // API
+        express.use('/api', routerAPI());
         
-        express.use(requestTime);
-
-        express.get('/', function (req, res) {
-
-            var responseText = 'Hello World!<br>';
-            responseText += '<small>Requested at: ' + req.requestTime + '</small>';
-            res.send(responseText);
-        });
+        // ROOT
+        express.use(Express.static('www'));
     }
 
     //this.API = function () {
@@ -58,28 +117,7 @@ var Routes = function () {
     //            res.status(401).end();
     //        }
     //    });
-    //    router.route('/auth/login').post(function (req, res) {
-    //        var passport = req._passport.instance;
-    //        passport.authenticate('local-login', function (err, user, info) {
-    //            //if (err) { return next(err); }
-    //            if (user) {
-    //                req.logIn(user, function (err) {
-    //                    if (!err) {
-    //                        res.json({ result: true });
-    //                    } else {
-    //                        res.status(401).end();
-    //                    }
-    //                });
-    //            } else {
-    //                res.status(401).end();
-    //            }
-    //        })(req, res);
 
-    //    });
-    //    router.route('/auth/logout').get(function (req, res) {
-    //        req.logOut();
-    //        res.send('OK');
-    //    });
 
     //    // system
     //    router.all('*', isAuthenticated);
@@ -101,42 +139,33 @@ var Routes = function () {
     //    return router;
     //}
 
-    //this.SSDP = function () {
-    //    var router = express.Router();
-
-    //    // desc
-    //    router.route('/description').get(function (req, res) {
-    //        res.json({ result: true });
-    //    });
-
-    //    return router;
-    //}
-
-    //this.Components = function () {
-    //    return express.static('bower_components')
-    //}
-    //this.Root = function () {
-    //    return express.static('public')
-    //}
 }
 
 var Authentication = function () { 
     var self = this;
     
-    self.init = function () { 
+    self.init = function () {
         passport.deserializeUser(function (id, done) {
+            if (id == 1) {
+                var config = helpers.Configuration;
+                var uname = config.get('auth:user') || '';
+                var pass = config.get('auth:pass') || '';
+                done(null, { id: id, local: { username: uname, password: pass } });
+            } else { 
+                done("error", null);
+            }
             //User.findById(id, function (err, user) {
-                done(err, { _id: 1, username: 'admin', password: 'admin' }); // done(err, user);
+            //    done(err, { _id: 1, username: 'admin', password: 'admin' }); // done(err, user);
             //});
         });
         passport.serializeUser(function (user, done) {
-            done(null, 1); // done(null, user._id);
+            done(null, user.id);
         });
-        passport.use('login', new passportLocal.Strategy({ passReqToCallback: true }, function (req, username, password, done) {
+        passport.use('local', new passportLocal.Strategy({ passReqToCallback: true }, function (req, username, password, done) {
             var config = helpers.Configuration;
-            var uname = config.get('authorization:username') || '';
-            var pass = config.get('authorization:password') || '';
-            var user = { id: 1, username: uname, password: pass };
+            var uname = config.get('auth:user') || '';
+            var pass = config.get('auth:pass') || '';
+            var user = { id: 1, local: { username: uname, password: pass } };
         
             if (!uname) { return done(null, false); }
             var isNamePass = (uname == username && pass == password);
@@ -144,6 +173,22 @@ var Authentication = function () {
         
             return done(null, user);
         }));
+        
+        passport.use('localapikey', new passportLocalApiKey.Strategy(
+            function (apikey, done) {
+                var config = helpers.Configuration;
+                var uname = config.get('auth:user') || '';
+                var pass = config.get('auth:pass') || '';
+                var user = { id: 1, local: { username: uname, password: pass } };
+                return done(null, user);
+                //User.findOne({ apikey: apikey }, function (err, user) {
+                //    if (err) { return done(err); }
+                //    if (!user) { return done(null, false); }
+                //    return done(null, user);
+                //});
+            }
+        ));        
+
         var secret = helpers.Configuration.get('services:web:sessionSecret', helpers.Utility.createUUID());
         express.use(session({ secret: secret, saveUninitialized: true, resave: true }));
         express.use(passport.initialize());
@@ -156,7 +201,7 @@ var factory = function () {
     var self = this;
     var _address = null;
     var _port = 26501;
-    
+
     // parsers
     express.use(bodyParser.json());
     express.use(bodyParser.urlencoded({ extended: true }));
@@ -179,7 +224,8 @@ var factory = function () {
         _address = _server.address();
         self.emit('error', _address);
     });
-
+    
+    // exposed stuff
     self.start = function () { 
         _server.listen(_port, function () {
             _address = _server.address();
@@ -195,11 +241,4 @@ var factory = function () {
 }
 util.inherits(factory, events.EventEmitter);
 module.exports = new factory();
-
-
-
-
-
-
-
 

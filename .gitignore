@@ -1,13 +1,17 @@
 .git
 .vs
 bin
+config
 data
+dist
 logs
 node_modules
 obj
+old
 
 .gitignore
 .ntvs_analysis.dat
 *.njsproj
 *.sln
 *.suo
+/.ntvs_analysis.dat.tmp

@@ -7,7 +7,7 @@ var os = require('os');
 
 var factory = function () {
     var self = this;
-    var mdns = multicastdns({ ip: '224.0.0.251', port: 5353, ttl: 255, multicast: true, loopback: false, reuseAddr: true });
+    var mdns = multicastdns({ ip: '224.0.0.251', port: 5353, ttl: 255, multicast: true, loopback: true, reuseAddr: true });
     var mdnsResponse = [];
     var services = [];
     
@@ -102,7 +102,9 @@ var factory = function () {
         services = services.filter(function (value) { return (value.name != name || value.type != type || value.port != port); });
         updateResponse();
     }
-
+    self.destroy = function () { 
+        mdns.destroy();
+    }
 }
 util.inherits(factory, events.EventEmitter);
 module.exports = new factory();

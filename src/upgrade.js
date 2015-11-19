@@ -30,6 +30,8 @@ var factory = function () {
             // initial new version.. clean config
             config.reset();    
             if (!config.get('app:uuid')) { config.set('app:uuid', helpers.Utility.createUUID()) };
+            if (!config.get('auth:user')) { config.set('auth:user', 'admin') };
+            if (!config.get('auth:pass')) { config.set('auth:pass', 'admin') };
             return true;
         });
         // last check

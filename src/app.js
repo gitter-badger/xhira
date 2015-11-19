@@ -1,10 +1,5 @@
 ﻿/*
  * TCP/UDP port range to use: 26500-26999
- * 
- * TODO
- * - 
- * 
- * 
  */
 
 var helpers = require('./lib/helpers');
@@ -13,10 +8,13 @@ var factory = function () {
     var self = this;
     
     // Data stores
-    var store = require('./lib/datastore.js').store;        
+    var store = require('./lib/datastore.js').store;
     
     // mDNS service
     var mdns = require('./lib/mdns.js');
+    
+    // SSDP service
+    var ssdp = require('./lib/ssdp.js');
     
     // Web service
     var web = require('./lib/web.js');
@@ -49,26 +47,21 @@ var factory = function () {
     // public
     self.start = function () {
         web.start();
-        
-        
-        
-
         mqttServer.start();
-
         
-        // --
         //setTimeout(function () { 
         //    var c = require('./lib/mqtt.js').Client();
         //}, 2000);
-        // --
         //setTimeout(function () {
         //    self.stop();
         //}, 10000);
-        // --
+
     }
     self.stop = function () {
         mqttServer.stop();
         web.stop();
+        ssdp.destroy();
+        mdns.destroy();
     }
 
 }

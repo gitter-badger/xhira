@@ -1,0 +1,11 @@
+﻿{
+
+    "status": {
+        "success": {
+            "message": "Ok"
+        }
+    },
+    "data": {
+        "local": true 
+    }
+}

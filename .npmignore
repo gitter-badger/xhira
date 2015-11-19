@@ -1,7 +1,9 @@
 .git
 .vs
 bin
+config
 data
+dist
 logs
 node_modules
 obj

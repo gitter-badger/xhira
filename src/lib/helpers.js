@@ -1,13 +1,17 @@
 ﻿var events = require('events');
 var fs = require('fs');
+var path = require('path');
 var util = require('util');
 
 var lodash = require('lodash');
+var moment = require('moment');
 var nconf = require('nconf');
-var pkginfo = require('pkginfo');
 var q = require('q');
+var semver = require('semver');
 var uuid = require('uuid');
 var winston = require('winston');
+
+var ip = require('./ip.js');
 
 // Configuration
 var Configuration = function () {
@@ -67,9 +71,9 @@ var Logger = function () {
     self.info = function (msg, meta) {
         _log('info', msg, meta);
     }
-    self.log = function (level, msg, meta) {
-        _log(level, msg, meta);
-    }
+    //self.log = function (level, msg, meta) {
+    //    _log(level, msg, meta);
+    //}
     self.silly = function (msg, meta) {
         _log('silly', msg, meta);
     }
@@ -90,57 +94,12 @@ var Utility = function () {
     self.createUUID = function () {
         return uuid.v1();
     }
-    self.getModuleInfo = function (mod) {
-        var m = mod || module;
-        var info = pkginfo(m);
-        return m.exports;
+    self.getPackageInfo = function () {
+        var appDir = path.dirname(require.main.filename);
+        var pkg = JSON.parse(fs.readFileSync(appDir + '/package.json', 'utf8'));
+        return pkg;
     }
-    self.versionCompare = function (v1, v2, options) {
-        var lexicographical = options && options.lexicographical,
-            zeroExtend = options && options.zeroExtend,
-            v1parts = v1.split('.'),
-            v2parts = v2.split('.');
-        
-        function isValidPart(x) {
-            return (lexicographical ? /^\d+[A-Za-z]*$/ : /^\d+$/).test(x);
-        }
-        
-        if (!v1parts.every(isValidPart) || !v2parts.every(isValidPart)) {
-            return NaN;
-        }
-        
-        if (zeroExtend) {
-            while (v1parts.length < v2parts.length) v1parts.push("0");
-            while (v2parts.length < v1parts.length) v2parts.push("0");
-        }
-        
-        if (!lexicographical) {
-            v1parts = v1parts.map(Number);
-            v2parts = v2parts.map(Number);
-        }
-        
-        for (var i = 0; i < v1parts.length; ++i) {
-            if (v2parts.length == i) {
-                return 1;
-            }
-            
-            if (v1parts[i] == v2parts[i]) {
-                continue;
-            }
-            else if (v1parts[i] > v2parts[i]) {
-                return 1;
-            }
-            else {
-                return -1;
-            }
-        }
-        
-        if (v1parts.length != v2parts.length) {
-            return -1;
-        }
-        
-        return 0;
-    }
+    
 
 }
 util.inherits(Utility, events.EventEmitter);
@@ -149,8 +108,11 @@ util.inherits(Utility, events.EventEmitter);
 var factory = function () {
     this._ = lodash;
     this.Configuration = new Configuration();
-    this.Logger = new Logger();
+    this.ip = ip;
+    this.log = new Logger();
+    this.moment = moment;
     this.Q = q;
-    this.Utility = new Utility();
+    this.util = new Utility();
+    this.version = semver;
 }
 module.exports = new factory();

@@ -19,28 +19,28 @@ var factory = function () {
     // Web service
     var web = require('./lib/web.js');
     web.on('started', function (data) {
-        helpers.Logger.info('Web Service listening (' + data.address + ':' + data.port + ')');
-        mdns.addService('Xhira', 'xhira', 25600);
+        helpers.log.info('Web Service listening (' + data.address + ':' + data.port + ')');
+        mdns.addService('Xhira', 'xhira', data.port);
         mdns.addService('Xhira', 'http', data.port);
     });
     web.on('error', function (data) {
-        helpers.Logger.error('Web Service start FAILED!');
+        helpers.log.error('Web Service start FAILED!');
     });
     web.on('stopping', function (data) {
-        helpers.Logger.error('Web Service stopping');
+        helpers.log.error('Web Service stopping');
         mdns.removeService('Xhira', 'http', data.port);
-        mdns.removeService('Xhira', 'xhira', 25600);
+        mdns.removeService('Xhira', 'xhira', data.port);
     });    
     
     // MQTT Service
     var mqtt = require('./lib/mqtt.js');
     var mqttServer = mqtt.Server;
     mqttServer.on('started', function (data) {
-        helpers.Logger.info('MQTT Service listening (' + data.address + ':' + data.port + ')');
+        helpers.log.info('MQTT Service listening (' + data.address + ':' + data.port + ')');
         mdns.addService('Xhira', 'mqtt', data.port);
     });
     mqttServer.on('stopping', function (data) {
-        helpers.Logger.error('MQTT Service stopping');
+        helpers.log.error('MQTT Service stopping');
         mdns.removeService('Xhira', 'mqtt', data.port);
     });    
 
@@ -63,6 +63,7 @@ var factory = function () {
         ssdp.destroy();
         mdns.destroy();
     }
+
 
 }
 module.exports = new factory();

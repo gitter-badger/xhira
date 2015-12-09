@@ -9,12 +9,15 @@
     <link rel="stylesheet" href="./lib/angular/angular-material.min.css" />
     <link rel="stylesheet" href="./assets/css/main.css" />
 </head>
-<body class="mainview" layout="column" ng-controller="MainViewController">
+<body class="mainview" layout="column" ng-controller="MainViewController" ng-cloak>
     <!-- toolbar -->
     <md-toolbar>
         <div class="md-toolbar-tools">
-            <md-button ng-click="toggleLeftMenu()"><md-icon>menu</md-icon></md-button>
+            <md-button class="md-icon-button" ng-click="toggleLeftMenu()"><md-icon>menu</md-icon></md-button>
+            <span flex></span>
             <span>Xhira</span>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click=""><md-icon>notifications</md-icon></md-button>
         </div>
     </md-toolbar>
     <!-- side navigation -->
@@ -27,25 +30,35 @@
                 </md-button>
             </md-list-item>
             <md-list-item role="listitem" class="md-clickable">
+                <md-button ui-sref="login" ng-click="closeLeftMenu()">
+                    <md-icon>eject</md-icon>
+                    <span>Login</span>
+                </md-button>
+            </md-list-item>
+            <md-list-item role="listitem" class="md-clickable">
                 <md-button ui-sref="logout" ng-click="closeLeftMenu()">
                     <md-icon>eject</md-icon>
                     <span>Logout</span>
                 </md-button>
             </md-list-item>
-
         </md-list>
     </md-sidenav>
     <!-- main view -->
     <md-content ui-view layout="column" flex></md-content>
     <!-- libraries -->
+    <script src="./lib/moment-with-locales.min.js"></script>
+    <script src="./lib/eventify.min.js"></script>
+    <script src="./lib/socket.io.js"></script>
     <script src="./lib/angular/angular.min.js"></script>
     <script src="./lib/angular/angular-ui-router.min.js"></script>
     <script src="./lib/angular/angular-animate.min.js"></script>
     <script src="./lib/angular/angular-aria.min.js"></script>
     <script src="./lib/angular/angular-material.min.js"></script>
     <script src="./lib/angular/ng-lodash.min.js"></script>
+    <script src="./cordova.js"></script>
     <!-- helpers -->
     <script src=" ./src/helpers.js"></script>
+    <script src=" ./src/framework.js"></script>
     <!-- services -->
     <script src="./src/services.js"></script>
     <!-- controllers -->

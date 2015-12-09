@@ -1,18 +1,58 @@
 ﻿var events = require('events');
+var fs = require('fs');
 var util = require('util');
 
 var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
 var Express = require('express');
+var ExpressSession = require('express-session');
 var http = require('http');
 var passport = require('passport');
 var passportLocal = require('passport-local');
 var passportLocalApiKey = require('passport-localapikey');
-var session = require('express-session');
+var passportSocketIo = require('passport.socketio');
+var sessionNedbStore = require('connect-nedb-session');
+var socketio = require('socket.io');
 
 var helpers = require('./helpers.js');
 var _ = helpers._;
+var config = helpers.Configuration;
 
 var express = Express();
+
+var _SessionConfig;
+var SessionConfig = function () { 
+    if (_SessionConfig) { return _SessionConfig; }
+    var secret = config.get('services:web:sessionSecret', helpers.util.createUUID());
+    var sessionStore = sessionNedbStore(ExpressSession);
+    if (!fs.existsSync('data')) { fs.mkdirSync('data'); }
+    _SessionConfig = {
+        cookieParser: cookieParser,
+        key: 'xhira',
+        secret: secret,
+        resave: true,
+        saveUninitialized: true,
+        cookie: {
+            path: '/',
+            //httpOnly: true,
+            maxAge: 1000 * 3600 * 24 * 30 // 30 days
+        },
+        store: new sessionStore({ filename: 'data/sessions.db' }),
+        success: function(data, accept) {
+            //console.log('successful connection to socket.io');
+            accept(null, true);
+        },
+        fail: function (data, message, error, accept) {
+            //console.log('failed connection to socket.io:', message);
+            return accept(null, false);
+        }
+    };
+    return _SessionConfig;
+}
+
+var Session = function () {
+    return ExpressSession(SessionConfig());
+}
 
 // Routes
 var Routes = function () {
@@ -46,23 +86,50 @@ var Routes = function () {
     function routerAPI() {
         var router = Express.Router();
 
-        //router.all('/test', checkAuthentication);
-        //router.get('/test', function (req, res) {
-        //    sendResponse(res, { message: 'SECURE Message' });
-        //});
+        router.all('/test', checkAuthentication);
+        router.get('/test', function (req, res) {
+            sendResponse(res, { message: 'SECURE Message' });
+        });
+        
+        //router.all('/update', checkAuthentication);
+        router.get('/update', function (req, res) {
+            //var nextCheck = helpers.moment.utc().toJSON();
+            //config.set('update:nextCheck', nextCheck);
+            config.set('update:state', { action: 'test' });
+            sendResponse(res, { message: 'checking...' });
+        });
+        
+        // api
         router.get('/', function (req, res) {
             var data = {
-                version: '1.0.0',
-                name: 'Xhira'
+                node: {
+                    name: 'Xhira',
+                    uuid: config.get('node:uuid'),
+                    version: config.get('node:version'),
+                    address: req.app.locals.httpAddress.address,
+                    port: req.app.locals.httpAddress.port
+                }
             };
+            if (config.get('network')) {
+                data.network = {
+                    uuid: config.get('network:uuid')
+                };
+            }
+            if (req.isAuthenticated()) {
+                data.user = {
+                        id: req.user.id
+                };
+                
+            }
             sendResponse(res, { data: data });
         });
-        router.get('/location.json', function (req, res) {
-            var data = {
-                local: false
-            };
-            sendResponse(res, { data: data });
-        });
+        //router.get('/location.json', function (req, res) {
+        //    var data = {
+        //        local: false
+        //    };
+        //    sendResponse(res, { data: data });
+        //});
+        // api/auth
         router.get('/auth', function (req, res) {
             sendResponse(res, { data: { authenticated: req.isAuthenticated() } });
         });        
@@ -87,21 +154,17 @@ var Routes = function () {
             req.logOut();
             sendResponse(res);
         });
+
         return router;
     }    
 
-    self.init = function () { 
-    
-        var myLogger = function (req, res, next) {
-            console.log('USER: ' + JSON.stringify(req.user) + ' (' + Date.now() + ')');
-            next();
-        };
-        express.use(myLogger);
+    self.init = function () {
         
         // API
         express.use('/api', routerAPI());
         
         // ROOT
+        //express.use('cordova.js', express.static(__dirname + '/cordova.js'));
         express.use(Express.static('www'));
     }
 
@@ -141,13 +204,12 @@ var Routes = function () {
 
 }
 
-var Authentication = function () { 
+var Authentication = function () {
     var self = this;
     
     self.init = function () {
         passport.deserializeUser(function (id, done) {
             if (id == 1) {
-                var config = helpers.Configuration;
                 var uname = config.get('auth:user') || '';
                 var pass = config.get('auth:pass') || '';
                 done(null, { id: id, local: { username: uname, password: pass } });
@@ -162,7 +224,6 @@ var Authentication = function () {
             done(null, user.id);
         });
         passport.use('local', new passportLocal.Strategy({ passReqToCallback: true }, function (req, username, password, done) {
-            var config = helpers.Configuration;
             var uname = config.get('auth:user') || '';
             var pass = config.get('auth:pass') || '';
             var user = { id: 1, local: { username: uname, password: pass } };
@@ -173,10 +234,8 @@ var Authentication = function () {
         
             return done(null, user);
         }));
-        
         passport.use('localapikey', new passportLocalApiKey.Strategy(
             function (apikey, done) {
-                var config = helpers.Configuration;
                 var uname = config.get('auth:user') || '';
                 var pass = config.get('auth:pass') || '';
                 var user = { id: 1, local: { username: uname, password: pass } };
@@ -189,20 +248,26 @@ var Authentication = function () {
             }
         ));        
 
-        var secret = helpers.Configuration.get('services:web:sessionSecret', helpers.Utility.createUUID());
-        express.use(session({ secret: secret, saveUninitialized: true, resave: true }));
+        express.use(Session());
         express.use(passport.initialize());
-        express.use(passport.session());    
+        express.use(passport.session());
+        
+        // CORS
+        express.use(function (req, res, next) {
+            res.header("Access-Control-Allow-Origin", "*");
+            res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+            next();
+        });
     }
 
 }
 
 var factory = function () {
     var self = this;
-    var _address = null;
-    var _port = 26501;
-
+    var _port = 26500;
+    
     // parsers
+    express.use(cookieParser());
     express.use(bodyParser.json());
     express.use(bodyParser.urlencoded({ extended: true }));
     
@@ -217,24 +282,33 @@ var factory = function () {
     // server
     var _server = http.createServer(express);
     _server.on('close', function () {
-        self.emit('stopping', _address);
-        _address = null;
+        self.emit('stopping', express.locals.httpAddress);
+        express.locals.httpAddress = null;
     });
     _server.on('error', function (err) {
-        _address = _server.address();
-        self.emit('error', _address);
+        express.locals.httpAddress = _server.address();
+        self.emit('error', express.locals.httpAddress);
     });
     
+    // socket io
+    var _io = socketio(_server);
+    _io.use(passportSocketIo.authorize(SessionConfig()));
+    _io.on('connection', function (socket) {
+        var user = JSON.stringify(socket.request.user);
+
+        //console.log('Your User ID is', user);
+    });
+
     // exposed stuff
     self.start = function () { 
         _server.listen(_port, function () {
-            _address = _server.address();
-            self.emit('started', _address);
+            express.locals.httpAddress = { address: helpers.ip.getIP('ipv4'), port: _port }; //_server.address();
+            self.emit('started', express.locals.httpAddress);
         });
     }
     self.stop = function () { 
         _server.close(function () {
-            self.emit('stopped', _address);
+            self.emit('stopped', express.locals.httpAddress);
         });
     }
 

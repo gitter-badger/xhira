@@ -1,5 +1,5 @@
 ﻿angular.module('app.libraries', ['ui.router', 'ngMaterial']);
-angular.module('app', ['app.libraries', 'app.helpers', 'app.services', 'app.controllers']);
+angular.module('app', ['app.libraries', 'app.helpers', 'app.framework', 'app.services', 'app.controllers']);
 
 // routes
 angular.module('app')
@@ -9,6 +9,13 @@ angular.module('app')
             templateUrl: 'src/views/home.html',
             controller: 'HomeViewController'
         });
+        $stateProvider.state('connection', {
+            url: '',
+            params: { type: null },
+            templateUrl: 'src/views/connection.html',
+            controller: 'ConnectionViewController'
+        });
+
         $stateProvider.state('login', {
             url: '/login',
             templateUrl: 'src/views/login.html',
@@ -27,8 +34,20 @@ angular.module('app')
         $urlRouterProvider.otherwise('');
     }])
     .config(function ($mdThemingProvider) {
-       // $mdThemingProvider.theme('default')
-       // .dark();
+        // themes
+        $mdThemingProvider.theme('xhira-dark')
+            .primaryPalette('indigo') //, { 'default': '400' })
+            .accentPalette('pink', { 'default': '400' })
+            .dark();
+                //.primaryPalette('purple')
+                //.backgroundPalette('grey');
+        $mdThemingProvider.theme('xhira-light')
+                //.primaryPalette('purple')
+                //.backgroundPalette('grey');
+                //.dark();
+    
+        $mdThemingProvider.setDefaultTheme('xhira-light');
+
     })
     .run(function ($rootScope, $templateCache) {
         $rootScope.$on('$viewContentLoaded', function () {
@@ -39,5 +58,7 @@ angular.module('app')
 
 // bootstrap
 angular.element(document).ready(function () {
-    angular.bootstrap(document, ['app']);
+    document.addEventListener('deviceready', function () { 
+        angular.bootstrap(document, ['app']);
+    }, false);
 });

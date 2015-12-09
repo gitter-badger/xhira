@@ -3,6 +3,7 @@ var util = require('util');
 
 var mqtt = require('mqtt');
 
+var helpers = require('./helpers.js');
 
 var Client = function () {
     var self = this;
@@ -90,7 +91,7 @@ var Server = function () {
     });
     self.start = function () {
         _server.listen(_port, function () {
-            _address = _server.address();
+            _address = { address: helpers.ip.getIP('ipv4'), port: _port };
             self.emit('started', _address);
         });
     }

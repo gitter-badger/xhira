@@ -12,7 +12,7 @@ angular.module('app.helpers')
             appConfig = (options) ? options : {};
         }
     
-        this.$get = ['$http', '$q', 'helpers.localstorage', 'lodash', function ($http, $q, localStore, _) {
+        this.$get = ['helpers.localstorage', 'lodash', function (localStore, _) {
             
                 function readConfig() {
                     var lsConfig = (!_.isUndefined(localStore.config) && !_.isNull(localStore.config)) ? localStore.config : {};
@@ -297,15 +297,18 @@ angular.module('app.helpers')
         return factory;
     }])
 
+    .factory('helpers.config', ['$appConfig', function ($appConfig) {
+        return $appConfig;
+    }])
+
     .factory('helpers.localstorage', ['$rootScope', '$window', '$log', function ($rootScope, $window, $log) {
         var storageType = 'localStorage';
-        var prefix = '';
+        var prefix = 'xhira_';
         var webStorage = $window[storageType] || ($log.warn('This browser does not support Web Storage!'), {});
         var $storage = {
             $default: function (items) { for (var k in items) { angular.isDefined($storage[k]) || ($storage[k] = items[k]); } return $storage; },
             $reset: function (items) { for (var k in $storage) { '$' === k[0] || delete $storage[k]; } return $storage.$default(items); }
         };
-        
         for (var i = 0, k; i < webStorage.length; i++) {
             (k = webStorage.key(i)) && prefix === k.slice(0, prefix.length) && ($storage[k.slice(prefix.length)] = angular.fromJson(webStorage.getItem(k)));
         }
@@ -340,17 +343,11 @@ angular.module('app.helpers')
         return $storage;
     }])
 
-    .factory('helpers.api', ['$http', '$q', '$appConfig', 'lodash', function ($http, $q, $appConfig, _) {
-        //var baseUrl = $appConfig.get('apiUrl');
+    .factory('helpers.api', ['$http', '$q', 'lodash', function ($http, $q, _) {
         
-        //function getCountryId() {
-        //    return parseInt($appConfig.get('countryId') || 0);
-        //}
         function getHeaders(options) {
             options = _.defaults(options || {}, { });
-            //var userId = $appConfig.get('userId');
             var headers = _.extend({}, options.add);
-            //if (options.applyCountryFilter) { headers.CountryId = getCountryId(); }
             return headers;
         }
         
@@ -404,10 +401,66 @@ angular.module('app.helpers')
         return factory;
     }])
 
-    .factory('helpers', ['helpers.localstorage', 'helpers.api', function (localStorage, api) {
+    .factory('helpers.platform', ['$q', 'lodash', function ($q, _) {
+        var _supported = ['android', 'browser', 'ios'];
         var factory = {};
-        factory.api = api;        
+        
+        factory.id = cordova.platformId;
+        
+        factory.isDevice = function () { 
+            return (factory.id != 'browser');
+        }        
+        factory.isSupported = function () {
+            var idx = _.indexOf(_supported, factory.id);
+            return (idx >= 0);
+        }
+        
+        factory.zeroConf = new function () {
+            var zf = {};
+            //zf.listServices = function (type, options, callback) {
+            //    //var def = $q.defer();
+            //    options = _.defaults(options || {}, { timeout: 5000 });
+            //    if (window.cambiocreative && window.cambiocreative.CDVZeroConfig) {
+            //        var zcfg = window.cambiocreative.CDVZeroConfig;
+            //        zcfg.list(type, options.timeout, function (result) {
+            //            if (callback && result) { callback(result); }
+            //            //def.resolve(result);
+            //        }, function (err) { 
+            //            //def.resolve(err);
+            //        });
+            //    } else {
+            //        if (callback) { callback([1,2,3]); }
+            //        //def.resolve([1,2,3]);                    
+            //    }
+            //    //return def.promise;
+            //}
+            zf.available = function () {
+                return (window.cambiocreative && window.cambiocreative.CDVZeroConfig);
+            }
+            zf.watch = function (type, callback) {
+                if (zf.available()) {
+                    var zcfg = window.cambiocreative.CDVZeroConfig;
+                    zcfg.watch(type, function (result) {
+                        if (callback && result) { callback(result); }
+                    });
+                }
+            }
+            return zf;
+        }
+
+
+        return factory;
+    }])
+
+    .factory('helpers', ['$q', 'lodash', 'helpers.config', 'helpers.localstorage', 'helpers.api', 'helpers.platform', function ($q, _, config, localStorage, api, platform) {
+        var factory = {};
+        factory.q = $q;
+        factory._ = _;
+        factory.config = config;
+        factory.api = api;
         factory.localStorage = localStorage;
+        factory.moment = moment;
+        factory.platform = platform;
         return factory;
     }])
 

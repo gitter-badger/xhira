@@ -1,4 +1,5 @@
 site_name: Xhira Documentation
+repo_url: https://github.com/xhira/xhira/
 pages:
 - Home: index.md
 theme: readthedocs

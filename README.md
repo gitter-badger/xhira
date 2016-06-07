@@ -1,4 +1,7 @@
 [![Stories in Ready](https://badge.waffle.io/xhira/xhira.png?label=ready&title=Ready)](https://waffle.io/xhira/xhira)
+[![Build Status](https://travis-ci.org/xhira/xhira.svg?branch=master)](https://travis-ci.org/xhira/xhira)
+[![Coverage Status](https://coveralls.io/repos/github/xhira/xhira/badge.svg?branch=master)](https://coveralls.io/github/xhira/xhira?branch=master)
+
 Xhira   
 =====
 

@@ -5,6 +5,8 @@
 Xhira   
 =====
 
+[![Join the chat at https://gitter.im/xhira/xhira](https://badges.gitter.im/xhira/xhira.svg)](https://gitter.im/xhira/xhira?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 This project has been created to make home automation available to everyone. Currently there are many home automation systems on the market, but they are all very expensive. This makes it difficult for the average user to set up a professional home automation system. On top of the cost, these programs are very restrictive. Users are forced to use only the hardware that is supported and without an open extendable architecture they are at the mercy of the software company to develop new interfaces.
 
 Xhira overcomes these two major problems with the home automation software industry. First and foremost, it is free and open source. Anyone with an internet connection can download, install and get up and running without spending a dime. Even more exciting is the open extendability. Anyone can use the open source API to develop new plug-ins and expand the functionality of the system. With the openness and community focused vision the development of new and exciting plug-ins is sure to push the limits of the imagination.

@@ -1,0 +1,14 @@
+### Generic ###
+build
+
+### NodeJS ###
+*.log
+logs
+node_modules
+npm-debug.log*
+
+### Typings ###
+typings
+
+### Visual Studio Code ###
+.vscode

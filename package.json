@@ -1,0 +1,20 @@
+{
+  "name": "xhira",
+  "version": "0.0.1",
+  "description": "Xhira",
+  "main": "main.js",
+  "engine": "node >= 6.x",
+  "author": {
+    "name": "Osmond van Hemert"
+  },
+  "dependencies": {
+    "express": "^4.13.4",
+    "nconf": "^0.8.4",
+    "pouchdb": "^5.3.2"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-sourcemaps": "^1.6.0",
+    "gulp-typescript": "^2.13.5"
+  }
+}
